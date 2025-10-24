@@ -1,0 +1,5 @@
+TO RUN:
+
+cd "d:\Users\VINCE\OneDrive\Desktop\CSADPRG\" && kotlinc MP_2_Kotlin.kt -include-runtime -d MP_2_Kotlin.jar && java -jar MP_2_Kotlin.jar
+
+*REPLACE WITH CURRENT DIRECTORY OF FILES*
