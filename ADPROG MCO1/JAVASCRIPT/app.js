@@ -1,204 +1,191 @@
-/**
- * MCO1: Banking & Currency Exchange Application
- * Simplified JavaScript (Node.js) version
- * - No file I/O
- * - Single user only
- * - All data hard-coded
- *
- * Run: node banking_app_simple.js
- */
 
-const readline = require("readline").createInterface({
-  input: process.stdin,
-  output: process.stdout,
+
+const readline = require('readline');
+const currencies = ["PHP", "USD", "JPY", "GBP", "EUR", "CNY"];
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-const BASE_CURRENCY = "PHP";
-const SUPPORTED = ["PHP", "USD", "JPY", "GBP", "EUR", "CNY"];
-const ANNUAL_INTEREST_RATE = 0.05; // 5% per annum
+function askQuestion(question) {
+    return new Promise((resolve) => {
+        rl.question(question, (answer) => {
+            resolve(answer);
+        });
+    });
+}
 
-// Hard-coded single user and exchange rates
 let user = {
-  name: "Juan Dela Cruz",
-  currency: "PHP",
-  balance: 1000.0,
-};
-
-let rates = {
-  USD: 52.0,
-  JPY: 0.36,
-  GBP: 65.0,
-  EUR: 56.0,
-  CNY: 7.5,
-};
-
-function ask(q) {
-  return new Promise((resolve) => readline.question(q, resolve));
-}
-
-function fmt(n) {
-  return Number(n).toFixed(2);
-}
-
-// Convert between currencies
-function convertAmount(amount, src, dest) {
-  amount = Number(amount);
-  if (isNaN(amount)) throw new Error("Invalid amount");
-
-  if (src === dest) return amount;
-
-  // Convert source to PHP
-  let phpAmount;
-  if (src === BASE_CURRENCY) phpAmount = amount;
-  else phpAmount = amount * rates[src];
-
-  // Convert PHP to destination
-  if (dest === BASE_CURRENCY) return phpAmount;
-  else return phpAmount / rates[dest];
-}
-
-// ---- FEATURES ----
-
-async function depositAmount() {
-  console.log("\n-- Deposit Amount --");
-  console.log(`Current Balance: ${fmt(user.balance)} ${user.currency}`);
-
-  SUPPORTED.forEach((c, i) => console.log(`[${i + 1}] ${c}`));
-  const idx = Number(await ask("Deposit Currency: "));
-  const cur = SUPPORTED[idx - 1] || "PHP";
-
-  const amt = Number(await ask(`Deposit Amount (${cur}): `));
-  if (isNaN(amt) || amt <= 0) return console.log("Invalid amount!");
-
-  const converted = convertAmount(amt, cur, user.currency);
-  user.balance += converted;
-
-  console.log(
-    `Deposited ${fmt(amt)} ${cur} -> ${fmt(converted)} ${user.currency}`
-  );
-  console.log(`Updated Balance: ${fmt(user.balance)} ${user.currency}`);
-}
-
-async function withdrawAmount() {
-  console.log("\n-- Withdraw Amount --");
-  console.log(`Current Balance: ${fmt(user.balance)} ${user.currency}`);
-
-  SUPPORTED.forEach((c, i) => console.log(`[${i + 1}] ${c}`));
-  const idx = Number(await ask("Withdraw Currency: "));
-  const cur = SUPPORTED[idx - 1] || "PHP";
-
-  const amt = Number(await ask(`Withdraw Amount (${cur}): `));
-  if (isNaN(amt) || amt <= 0) return console.log("Invalid amount!");
-
-  const converted = convertAmount(amt, cur, user.currency);
-  if (converted > user.balance) return console.log("Insufficient balance!");
-
-  user.balance -= converted;
-
-  console.log(
-    `Withdrew ${fmt(amt)} ${cur} -> ${fmt(converted)} ${user.currency}`
-  );
-  console.log(`Updated Balance: ${fmt(user.balance)} ${user.currency}`);
-}
-
-async function recordExchangeRate() {
-  console.log("\n-- Record Exchange Rate --");
-  SUPPORTED.filter((c) => c !== BASE_CURRENCY).forEach((c, i) =>
-    console.log(`[${i + 1}] ${c}`)
-  );
-
-  const idx = Number(await ask("Select Currency: "));
-  const foreign = SUPPORTED.filter((c) => c !== BASE_CURRENCY)[idx - 1];
-  if (!foreign) return console.log("Invalid selection!");
-
-  const rate = Number(await ask(`1 ${foreign} = X PHP: `));
-  if (isNaN(rate) || rate <= 0) return console.log("Invalid rate!");
-
-  rates[foreign] = rate;
-  console.log(`Recorded new rate: 1 ${foreign} = ${fmt(rate)} PHP`);
-}
-
-async function currencyExchange() {
-  console.log("\n-- Currency Exchange --");
-
-  SUPPORTED.forEach((c, i) => console.log(`[${i + 1}] ${c}`));
-  const srcIdx = Number(await ask("Source Currency: "));
-  const src = SUPPORTED[srcIdx - 1];
-
-  const amt = Number(await ask(`Amount (${src}): `));
-
-  SUPPORTED.forEach((c, i) => console.log(`[${i + 1}] ${c}`));
-  const destIdx = Number(await ask("Target Currency: "));
-  const dest = SUPPORTED[destIdx - 1];
-
-  const result = convertAmount(amt, src, dest);
-  console.log(`${fmt(amt)} ${src} = ${fmt(result)} ${dest}`);
-}
-
-async function showInterest() {
-  console.log("\n-- Show Interest Computation --");
-  const days = Number(await ask("Number of Days: "));
-  if (isNaN(days) || days <= 0) return console.log("Invalid number of days!");
-
-  console.log(
-    `\nAccount: ${user.name}\nCurrent Balance: ${fmt(
-      user.balance
-    )} ${user.currency}\nInterest Rate: 5% per annum`
-  );
-  console.log("Day | Interest | Balance");
-
-  let balance = user.balance;
-  for (let d = 1; d <= days; d++) {
-    const interest = balance * (ANNUAL_INTEREST_RATE / 365);
-    balance += interest;
-    console.log(`${d.toString().padEnd(3)} | ${fmt(interest).padEnd(8)} | ${fmt(balance)}`);
-  }
-}
-
-// ---- MAIN MENU ----
-async function mainMenu() {
-  while (true) {
-    console.log("\n===== MAIN MENU =====");
-    console.log("[1] Deposit Amount");
-    console.log("[2] Withdraw Amount");
-    console.log("[3] Record Exchange Rate");
-    console.log("[4] Currency Exchange");
-    console.log("[5] Show Interest Computation");
-    console.log("[0] Exit");
-
-    const choice = await ask("Select Transaction: ");
-
-    switch (choice) {
-      case "1":
-        await depositAmount();
-        break;
-      case "2":
-        await withdrawAmount();
-        break;
-      case "3":
-        await recordExchangeRate();
-        break;
-      case "4":
-        await currencyExchange();
-        break;
-      case "5":
-        await showInterest();
-        break;
-      case "0":
-        console.log("Thank you for using the app!");
-        readline.close();
-        return;
-      default:
-        console.log("Invalid option!");
+    name: "",
+    balance: 1000,
+    currency: "PHP",
+    rates: {
+        PHP: 1.0,      
+        USD: 0.018,    
+        JPY: 2.5,      
+        GBP: 0.014,    
+        EUR: 0.016,    
+        CNY: 0.13,     
     }
-
-    const back = (await ask("Back to Main Menu (Y/N)? ")).toLowerCase();
-    if (back !== "y") {
-      console.log("Goodbye!");
-      readline.close();
-      return;
-    }
-  }
 }
 
-mainMenu();
+async function main() {
+    let continueProgram = true;
+    let currentCase = null;
+    
+    while (continueProgram) {
+        if (!currentCase) {
+            console.log("\n" + "=".repeat(50));
+            console.log("Select Transaction");
+            console.log ("[1] Register Account Name");
+            console.log ("[2] Deposit Amount");
+            console.log ("[3] Withdraw Amount");
+            console.log ("[4] Currency Exchange ");
+            console.log ("[5] Record Exchange Rates");
+            console.log ("[6] Show Interest Computation");
+            console.log ("[7] Exit Program");
+
+            let choice = await askQuestion("Enter your choice: ");
+            currentCase = choice;
+        }
+
+    switch (currentCase) {
+        case "1":
+            console.log ("Register Account Name");
+            let name = await askQuestion("Enter your name: ");
+            user.name = name;
+            console.log("Account name registered:", user.name);
+            break;
+        case "2":
+            console.log ("Deposit Amount");
+            let amount = await askQuestion("Enter the amount to deposit: ");
+            user.balance += parseFloat(amount);
+            console.log ("Deposited amount: ", amount);
+            console.log ("Updated balance: ", user.balance);
+            break;
+        case "3":
+            console.log ("Withdraw Amount");
+            let withdrawAmount = await askQuestion("Enter the amount to withdraw: ");
+            user.balance -= parseFloat(withdrawAmount);
+            console.log ("Withdrawn amount: ", withdrawAmount);
+            console.log ("Updated balance: ", user.balance);
+            break;
+        case "4":
+            console.log ("Foreign Currency Exchange");
+            console.log("Source Currency Options:");
+            console.log("[1] Philippine Peso (PHP)");
+            console.log("[2] United States Dollar (USD)");
+            console.log("[3] Japanese Yen (JPY)");
+            console.log("[4] British Pound Sterling (GBP)");
+            console.log("[5] Euro (EUR)");
+            console.log("[6] Chinese Yuan (CNY)");
+
+            let sourceChoice = await askQuestion("Select source currency: ");
+            let sourceAmount = await askQuestion("Enter source amount: ");
+
+            console.log("\nTarget Currency Options:");
+            console.log("[1] Philippine Peso (PHP)");
+            console.log("[2] United States Dollar (USD)");
+            console.log("[3] Japanese Yen (JPY)");
+            console.log("[4] British Pound Sterling (GBP)");
+            console.log("[5] Euro (EUR)");
+            console.log("[6] Chinese Yuan (CNY)");
+
+            let targetChoice = await askQuestion("Select target currency: ");
+            let sourceCurrency = currencies[parseInt(sourceChoice) - 1];
+            let targetCurrency = currencies[parseInt(targetChoice) - 1];
+            
+            
+            let exchangeRate = user.rates[targetCurrency] / user.rates[sourceCurrency];
+            let exchangedAmount = parseFloat(sourceAmount) * exchangeRate;
+            
+            console.log(`\nExchange Details:`);
+            console.log(`Source: ${parseFloat(sourceAmount)} ${sourceCurrency}`);
+            console.log(`Target: ${exchangedAmount.toFixed(2)} ${targetCurrency}`);
+            console.log(`Exchange Rate: 1 ${sourceCurrency} = ${exchangeRate.toFixed(4)} ${targetCurrency}`);
+            break;
+        case "5":
+            console.log ("Record Exchange Rates");
+            console.log("Select currency to update:");
+            console.log("[1] Philippine Peso (PHP)");
+            console.log("[2] United States Dollar (USD)");
+            console.log("[3] Japanese Yen (JPY)");
+            console.log("[4] British Pound Sterling (GBP)");
+            console.log("[5] Euro (EUR)");
+            console.log("[6] Chinese Yuan (CNY)");
+            
+            let currencyChoice = await askQuestion("Select currency to update: ");
+            let newRate = await askQuestion("Enter new exchange rate (PHP value): ");
+            let selectedCurrency = currencies[parseInt(currencyChoice) - 1];
+            
+            if (selectedCurrency === "PHP") {
+                console.log("Cannot change PHP rate - it's the base currency (1.0)");
+            } else {
+                user.rates[selectedCurrency] = parseFloat(newRate);
+                console.log(`Updated ${selectedCurrency} rate to: ${newRate}`);
+                console.log(`1 PHP = ${newRate} ${selectedCurrency}`);
+            }
+            break;
+        case "6":
+            console.log ("Show Interest Computation");
+            console.log(`Current Balance: ${user.balance} ${user.currency}`);
+            console.log("Annual Interest Rate: 5% per Annum");
+            console.log("Daily Interest Rate: 5% / 365 = 0.0137% per day");
+            
+            let days = await askQuestion("Enter number of days to compute interest: ");
+            let numberOfDays = parseInt(days);
+            
+            if (isNaN(numberOfDays) || numberOfDays <= 0) {
+                console.log("Invalid number of days. Please enter a positive number.");
+                break;
+            }
+            
+            const annualRate = 0.05;
+            const dailyRate = annualRate / 365;
+            
+            let currentBalance = user.balance;
+            let totalInterest = 0;
+            
+            console.log("\nInterest Computation Details:");
+            console.log("Day | Balance | Daily Interest | Total Interest");
+            console.log("----|---------|----------------|---------------");
+            
+            for (let day = 1; day <= numberOfDays; day++) {
+                let dailyInterest = currentBalance * dailyRate;
+                totalInterest += dailyInterest;
+                currentBalance += dailyInterest;
+                
+                console.log(`${day.toString().padStart(3)} | ${currentBalance.toFixed(2).padStart(7)} | ${dailyInterest.toFixed(2).padStart(14)} | ${totalInterest.toFixed(2).padStart(13)}`);
+            }
+            
+            console.log("\nSummary:");
+            console.log(`Initial Balance: ${user.balance} ${user.currency}`);
+            console.log(`Final Balance: ${currentBalance.toFixed(2)} ${user.currency}`);
+            console.log(`Total Interest Earned: ${totalInterest.toFixed(2)} ${user.currency}`);
+            console.log(`Interest Rate: ${(dailyRate * 100).toFixed(4)}% per day`);
+            break;
+        case "7":
+            console.log("Thank you for using the Banking System!");
+            continueProgram = false;
+            break;
+        default:
+            console.log ("Invalid choice. Please select 1-7.");
+    }
+    
+    if (continueProgram) {
+        let continueChoice = await askQuestion("\nBack to the main menu (y/n): ");
+        if (continueChoice.toLowerCase() === 'y' || continueChoice.toLowerCase() === 'yes') {
+            currentCase = null;
+        } else if (continueChoice.toLowerCase() === 'n' || continueChoice.toLowerCase() === 'no') {
+        } else {
+            console.log("Thank you for using the Banking System!");
+            continueProgram = false;
+        }
+    }
+    }
+    
+    rl.close();
+}
+
+main().catch(console.error);
